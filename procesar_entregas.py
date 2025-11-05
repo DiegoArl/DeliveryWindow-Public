@@ -87,8 +87,7 @@ def construir_df(ruta_excel):
     
     return df_csv
 
-
-def generar_csv(df_csv, nombre_archivo):
+def generar_csv(df_csv, nombre_archivo = None):
     """
     Guarda el DataFrame procesado como CSV y devuelve el nombre de archivo generado.
     Si no se pasa nombre_archivo, se genera uno con formato 'mes ddmmyyyy.csv'.
@@ -101,4 +100,5 @@ def generar_csv(df_csv, nombre_archivo):
     df_csv.to_csv(nombre_archivo, index=False, encoding="utf-8-sig")
 
     return nombre_archivo
+
 
