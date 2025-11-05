@@ -46,7 +46,7 @@ def construir_df(ruta_excel):
     ]
 
     df_csv = pd.DataFrame(columns=columnas)
-    df_csv["UNB"] = df_base["COD CLIENTE BEES"].str[2:10]
+    df_csv["UNB"] = df_base["COD CLIENTE BEES"].str[2:11]
     df_csv["ClientCode"] = df_base["codigo_cliente"]
     df_csv["Document"] = df_base["COD CLIENTE BEES"]
     df_csv["Exception"] = True
@@ -101,6 +101,7 @@ def generar_csv(df_csv, nombre_archivo = None):
     df_csv.to_csv(nombre_archivo, index=False, encoding="utf-8-sig")
 
     return nombre_archivo
+
 
 
 
