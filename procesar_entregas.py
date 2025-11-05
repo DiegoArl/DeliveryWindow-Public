@@ -90,8 +90,13 @@ def construir_df(ruta_excel):
 def generar_csv(df_csv, nombre_archivo):
     """
     Guarda el DataFrame procesado como CSV y devuelve el nombre de archivo generado.
+    Si no se pasa nombre_archivo, se genera uno con formato 'mes ddmmyyyy.csv'.
     """
+    if not nombre_archivo:
+        fecha_actual = datetime.now()
+        nombre_archivo = f"{fecha_actual.strftime('%B').lower()} {fecha_actual.strftime('%d%m%Y')}.csv"
     if not nombre_archivo.lower().endswith(".csv"):
         nombre_archivo += ".csv"
     df_csv.to_csv(nombre_archivo, index=False, encoding="utf-8-sig")
+
     return nombre_archivo
