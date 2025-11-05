@@ -83,7 +83,8 @@ def construir_df(ruta_excel):
                 if col:
                     df_csv.at[doc, col] = 1
     df_csv.reset_index(inplace=True)
-
+    df_csv = df_csv[columnas]
+    
     return df_csv
 
 
@@ -100,3 +101,4 @@ def generar_csv(df_csv, nombre_archivo):
     df_csv.to_csv(nombre_archivo, index=False, encoding="utf-8-sig")
 
     return nombre_archivo
+
