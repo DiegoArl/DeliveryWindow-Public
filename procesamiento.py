@@ -154,9 +154,16 @@ def crear_tabla_indicadores(df, width=1000, height=550):
                 b = int(130 + (123 - 130) * ratio)
             colors.append(f'rgb({r},{g},{b})')
         return colors
-
-    gps_ok_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok visitas"]])
-    gps_ok2_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok > 2 min visitas"]])
+        
+    def parse_percent(x):
+        if pd.isna(x):
+            return np.nan
+        if isinstance(x, str):
+            return float(x.strip('%'))
+        return float(x)
+        
+    gps_ok_colors = gradient_color([parse_percent(x) for x in df["% GPS Ok visitas"]])
+    gps_ok2_colors = gradient_color([parse_percent(x) for x in df["% GPS Ok > 2 min visitas"]])
 
     times = []
     for t in df["Primer check-in"]:
@@ -232,4 +239,5 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
     fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
+
 
