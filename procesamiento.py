@@ -123,11 +123,7 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
 # ============================================================
 # 5. FILTRAR CÓDIGOS Y LIMPIAR VALORES
 # ============================================================
-def filtrar_codigos(df):
-    codigos = [
-        "059001-00523", "059001-00721", "059001-00742",
-        "059001-00770", "059001-00788", "059001-00724"
-    ]
+def filtrar_codigos(df, codigos):
     df = df[df["Codigo"].isin(codigos)].drop(columns=["Codigo"])
     df["Primer check-in"] = df["Primer check-in"].fillna("-")
     df.fillna(0, inplace=True)
@@ -236,3 +232,4 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
     fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
+
