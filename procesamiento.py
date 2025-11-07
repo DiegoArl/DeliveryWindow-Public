@@ -1,12 +1,3 @@
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-from google.colab import files
-
-
-# ============================================================
-# 1. CARGA Y CLASIFICACIÓN DE ARCHIVOS
-# ============================================================
 def cargar_y_clasificar_archivos():
     global df_checkin, df_ventas, df_visitas
 
@@ -117,8 +108,39 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
             "Primer check-in"
         ]
     ]
-    return df_merge
 
+    df_merge["Rep. Ventas"] = df_merge["Rep. Ventas"].str.upper()
+
+    df_merge["% GPS Ok visitas"] = df_merge["% GPS Ok visitas"].apply(
+        lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
+    )
+    df_merge["% GPS Ok > 2 min visitas"] = df_merge["% GPS Ok > 2 min visitas"].apply(
+        lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
+    )
+
+    #df_merge = df_merge[df_merge["Rep. Ventas"] != "TOTAL"].copy()
+
+    for col in ["Orders", "Total Revenue", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "GPS Ok > 2 min Visitas"]:
+      df_merge[col] = pd.to_numeric(df_merge[col], errors="coerce").fillna(0)
+
+    subtotal = { 
+        "Rep. Ventas": "TOTAL", 
+        "Codigo": "-",
+        "Orders": df_merge["Orders"].sum(), 
+        "Total Revenue": df_merge["Total Revenue"].sum(),
+        "Visitas planificadas": df_merge["Visitas planificadas"].sum(), 
+        "Visitas completadas": df_merge["Visitas completadas"].sum(), 
+        "GPS Ok visitas": df_merge["GPS Ok visitas"].sum(), 
+        "% GPS Ok visitas": f"{df_merge['GPS Ok visitas'].sum() / df_merge['Visitas planificadas'].sum() * 100:.2f}%", 
+        "GPS Ok > 2 min Visitas": df_merge["GPS Ok > 2 min Visitas"].sum(), 
+        "% GPS Ok > 2 min visitas": f"{df_merge['GPS Ok > 2 min Visitas'].sum() / df_merge['Visitas planificadas'].sum() * 100:.2f}%", 
+        "Primer check-in": "-" 
+        } 
+    df_merge = df_merge.sort_values("% GPS Ok > 2 min visitas", ascending=False).reset_index(drop=True)
+    df_merge["Rep. Ventas"] = df_merge["Rep. Ventas"].str.upper()
+
+    df_merge = pd.concat([df_merge, pd.DataFrame([subtotal])], ignore_index=True)
+    return df_merge
 
 # ============================================================
 # 5. FILTRAR CÓDIGOS Y LIMPIAR VALORES
@@ -155,15 +177,8 @@ def crear_tabla_indicadores(df, width=1000, height=550):
             colors.append(f'rgb({r},{g},{b})')
         return colors
         
-    def parse_percent(x):
-        if pd.isna(x):
-            return np.nan
-        if isinstance(x, str):
-            return float(x.strip('%'))
-        return float(x)
-        
-    gps_ok_colors = gradient_color([parse_percent(x) for x in df["% GPS Ok visitas"]])
-    gps_ok2_colors = gradient_color([parse_percent(x) for x in df["% GPS Ok > 2 min visitas"]])
+    gps_ok_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok visitas"]])
+    gps_ok2_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok > 2 min visitas"]])
 
     times = []
     for t in df["Primer check-in"]:
@@ -205,6 +220,7 @@ def crear_tabla_indicadores(df, width=1000, height=550):
         ['white'] * len(df),
         ['white'] * len(df),
         ['white'] * len(df),
+        ['white'] * len(df),
         gps_ok_colors,
         ['white'] * len(df),
         gps_ok2_colors,
@@ -227,7 +243,7 @@ def crear_tabla_indicadores(df, width=1000, height=550):
 # ============================================================
 # 7. PIPELINE                     
 # ============================================================
-def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos):
+def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, height=550):
 
     df_checkin = separar_nombre_codigo(limpiar_df(df_checkin))
     df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
@@ -235,9 +251,7 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos):
 
     df_merge = unir_tablas(df_checkin, df_ventas, df_visitas)
     df_filtrado = filtrar_codigos(df_merge, codigos)
-    
+
+    fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
-    return df_filtrado
-
-
-
+    return df_filtrado, fig
