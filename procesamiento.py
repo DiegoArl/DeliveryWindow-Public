@@ -219,4 +219,20 @@ def crear_tabla_indicadores(df, width=1000, height=550):
                    font=dict(color='black', size=11))
     )])
     fig.update_layout(width=width, height=height)
+
     return fig
+# ============================================================
+# 7. PIPELINE                     
+# ============================================================
+def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, height=550):
+
+    df_checkin = separar_nombre_codigo(limpiar_df(df_checkin))
+    df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
+    df_visitas = separar_nombre_codigo(limpiar_df(df_visitas))
+
+    df_merge = unir_tablas(df_checkin, df_ventas, df_visitas)
+    df_filtrado = filtrar_codigos(df_merge, codigos)
+
+    fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
+    print("Pipeline completado.")
+    return df_filtrado, fig
