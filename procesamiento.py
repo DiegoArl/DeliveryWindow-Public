@@ -227,7 +227,7 @@ def crear_tabla_indicadores(df, width=1000, height=550):
 # ============================================================
 # 7. PIPELINE                     
 # ============================================================
-def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, height=550):
+def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos):
 
     df_checkin = separar_nombre_codigo(limpiar_df(df_checkin))
     df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
@@ -235,9 +235,9 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
 
     df_merge = unir_tablas(df_checkin, df_ventas, df_visitas)
     df_filtrado = filtrar_codigos(df_merge, codigos)
-
-    fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
+    
     print("Pipeline completado.")
-    return df_filtrado, fig
+    return df_filtrado
+
 
 
