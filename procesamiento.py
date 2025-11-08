@@ -1,3 +1,7 @@
+import pandas as pd
+import numpy as np
+from google.colab import files
+
 def cargar_y_clasificar_archivos():
     global df_checkin, df_ventas, df_visitas
 
@@ -255,3 +259,4 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
     fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
+
