@@ -116,6 +116,8 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
 
     df_merge["Rep. Ventas"] = df_merge["Rep. Ventas"].str.upper()
 
+    df_merge["Total Revenue"] = df_merge["Total Revenue"].apply(lambda x: f"{x:,.2f}")
+    
     df_merge["% GPS Ok visitas"] = df_merge["% GPS Ok visitas"].apply(
         lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
     )
@@ -260,5 +262,6 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
     fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
+
 
 
