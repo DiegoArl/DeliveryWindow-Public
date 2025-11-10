@@ -130,34 +130,35 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
     for col in ["Orders", "Total Revenue", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "GPS Ok > 2 min Visitas"]:
       df_merge[col] = pd.to_numeric(df_merge[col], errors="coerce").fillna(0)
 
-    subtotal = { 
-        "Rep. Ventas": "TOTAL", 
-        "Codigo": "-",
-        "Orders": df_merge["Orders"].sum(), 
-        "Total Revenue": df_merge["Total Revenue"].sum(),
-        "Visitas planificadas": df_merge["Visitas planificadas"].sum(), 
-        "Visitas completadas": df_merge["Visitas completadas"].sum(), 
-        "GPS Ok visitas": df_merge["GPS Ok visitas"].sum(), 
-        "% GPS Ok visitas": f"{df_merge['GPS Ok visitas'].sum() / df_merge['Visitas planificadas'].sum() * 100:.2f}%", 
-        "GPS Ok > 2 min Visitas": df_merge["GPS Ok > 2 min Visitas"].sum(), 
-        "% GPS Ok > 2 min visitas": f"{df_merge['GPS Ok > 2 min Visitas'].sum() / df_merge['Visitas planificadas'].sum() * 100:.2f}%", 
-        "Primer check-in": "-" 
-        } 
-    df_merge = df_merge.sort_values("% GPS Ok > 2 min visitas", ascending=False).reset_index(drop=True)
-    df_merge["Rep. Ventas"] = df_merge["Rep. Ventas"].str.upper()
-
-    df_merge = pd.concat([df_merge, pd.DataFrame([subtotal])], ignore_index=True)
     return df_merge
 
 # ============================================================
-# 5. FILTRAR CÓDIGOS Y LIMPIAR VALORES
+# 5. FILTRAR CÓDIGOS, LIMPIAR VALORES Y SUBTOTAL
 # ============================================================
 def filtrar_codigos(df, codigos):
     df = df[df["Codigo"].isin(codigos)].drop(columns=["Codigo"])
     df["Primer check-in"] = df["Primer check-in"].fillna("-")
-    df.fillna(0, inplace=True)
-    return df
 
+    subtotal = { 
+        "Rep. Ventas": "TOTAL", 
+        "Orders": df["Orders"].sum(), 
+        "Total Revenue": df["Total Revenue"].sum(),
+        "Visitas planificadas": df["Visitas planificadas"].sum(), 
+        "Visitas completadas": df["Visitas completadas"].sum(), 
+        "GPS Ok visitas": df["GPS Ok visitas"].sum(), 
+        "% GPS Ok visitas": f"{df['GPS Ok visitas'].sum() / df['Visitas planificadas'].sum() * 100:.2f}%", 
+        "GPS Ok > 2 min Visitas": df["GPS Ok > 2 min Visitas"].sum(), 
+        "% GPS Ok > 2 min visitas": f"{df['GPS Ok > 2 min Visitas'].sum() / df['Visitas planificadas'].sum() * 100:.2f}%", 
+        "Primer check-in": "-" 
+        } 
+    #df = df.sort_values("% GPS Ok > 2 min visitas", ascending=False).reset_index(drop=True)
+    df = df.assign(
+      temp_val=pd.to_numeric(df["% GPS Ok > 2 min visitas"].astype(str).str.replace("%", ""), errors="coerce")
+    ).sort_values("temp_val", ascending=False).drop(columns="temp_val").reset_index(drop=True)
+    df["Rep. Ventas"] = df["Rep. Ventas"].str.upper()
+    df = pd.concat([df, pd.DataFrame([subtotal])], ignore_index=True)
+
+    return df
 
 # ============================================================
 # 6. TABLA CON COLORES (VISUAL)
@@ -262,6 +263,3 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
     fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
-
-
-
