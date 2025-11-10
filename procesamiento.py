@@ -123,8 +123,6 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
         lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
     )
 
-    #df_merge = df_merge[df_merge["Rep. Ventas"] != "TOTAL"].copy()
-
     for col in ["Orders", "Total Revenue", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "GPS Ok > 2 min Visitas"]:
       df_merge[col] = pd.to_numeric(df_merge[col], errors="coerce").fillna(0)
 
@@ -154,8 +152,8 @@ def filtrar_codigos(df, codigos):
       temp_val=pd.to_numeric(df["% GPS Ok > 2 min visitas"].astype(str).str.replace("%", ""), errors="coerce")
     ).sort_values("temp_val", ascending=False).drop(columns="temp_val").reset_index(drop=True)
     df["Rep. Ventas"] = df["Rep. Ventas"].str.upper()
-    df["Total Revenue"] = df["Total Revenue"].apply(lambda x: f"{x:,.2f}")
     df = pd.concat([df, pd.DataFrame([subtotal])], ignore_index=True)
+    df["Total Revenue"] = df["Total Revenue"].apply(lambda x: f"{x:,.2f}")
 
     return df
 
@@ -262,4 +260,5 @@ def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, he
     fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
+
 
