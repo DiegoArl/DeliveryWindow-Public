@@ -330,9 +330,10 @@ def generar_excel(df_xl, nombre_archivo = None):
     """
     if not nombre_archivo:
         fecha_actual = datetime.now()
-        nombre_archivo = f"resultado-{fecha_actual.strftime('%d%m%Y')}.csv"
+        nombre_archivo = f"resultado-{fecha_actual.strftime('%d%m%Y')}.xlsx"
     if not nombre_archivo.lower().endswith(".xlsx"):
         nombre_archivo += ".xlsx"
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
