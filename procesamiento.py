@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from google.colab import files
+from datetime import datetime
 
 def cargar_y_clasificar_archivos():
-    global df_checkin, df_ventas, df_visitas
 
     CHECK_IN_HEADERS = [
         "Nombre del Rep. Ventas", "Visitas planificadas", "Visitas completadas", "Primer check-in",
@@ -28,11 +28,22 @@ def cargar_y_clasificar_archivos():
         "Visitas planificadas con pedidos", "GPS OK con pedidos"
     ]
 
+    VISITAS_MTD = [
+        "Nombre del Rep. Ventas", "Fecha", "Visitas planificadas", "Visitas completadas", "Primer check-in",
+        "Último check-out", "Duración promedio de la visita (min:sec)", "Tiempo total dentro de los PDV (H)", "Ruta Efectiva"
+    ]
+
+    VENTAS_MTD = [
+        "Rep. Ventas", "Fecha", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "% GPS Ok visitas",
+        "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas", "GPS > 2 min + Justificadas GPS Ok", "% GPS > 2 min + Justificadas GPS Ok", 
+        "Visita con justificacion", "Visitas planificadas con pedidos", "GPS OK con pedidos"
+    ]
+
     print("Sube los tres archivos (Check_In, Ventas y Visitas)...")
     uploaded = files.upload()
 
-    if len(uploaded) != 3:
-        raise ValueError(f"Se esperaban 3 archivos, pero se recibieron {len(uploaded)}")
+    if not (2 <= len(uploaded) <= 3):
+        raise ValueError(f"Se esperaban 2-3 archivos, pero se recibieron {len(uploaded)}")
 
     df_checkin = df_ventas = df_visitas = None
 
@@ -48,17 +59,17 @@ def cargar_y_clasificar_archivos():
         if headers == CHECK_IN_HEADERS:
             df_checkin = df
             print(f"{name}: identificado como Check_In")
-        elif headers == VENTAS_HEADERS:
+        elif headers == VENTAS_HEADERS or headers == VENTAS_MTD:
             df_ventas = df
             print(f"{name}: identificado como Ventas")
-        elif headers == VISITAS_HEADERS:
+        elif headers == VISITAS_HEADERS or headers == VISITAS_MTD:
             df_visitas = df
             print(f"{name}: identificado como Visitas")
         else:
             print(f"{name}: encabezados no coinciden con ningún tipo conocido")
 
-    if any(x is None for x in [df_checkin, df_ventas, df_visitas]):
-        raise ValueError("Falta al menos uno de los archivos requeridos (Check_In, Ventas, Visitas).")
+    if any(x is None for x in [df_checkin, df_visitas]):
+        raise ValueError("Falta al menos uno de los archivos requeridos (Check_In, Visitas).")
 
     print("✓ Archivos identificados correctamente y guardados en memoria.")
     return df_checkin, df_ventas, df_visitas
@@ -68,26 +79,41 @@ def cargar_y_clasificar_archivos():
 # 2. LIMPIEZA BÁSICA
 # ============================================================
 def limpiar_df(df):
+    if df is None:
+        return None
     if df.shape[1] >= 2:
         df = df.dropna(subset=[df.columns[1]])
     return df
-
 
 # ============================================================
 # 3. NORMALIZAR NOMBRE Y CÓDIGO
 # ============================================================
 def separar_nombre_codigo(df):
+    if df is None:
+      return None
+    col = None
     if "Nombre del Rep. Ventas" in df.columns:
-        df[["Rep. Ventas", "Codigo"]] = df["Nombre del Rep. Ventas"].str.split(" - ", n=1, expand=True)
-        df["Codigo"] = df["Codigo"].fillna(df["Rep. Ventas"])
-        df.drop(columns=["Nombre del Rep. Ventas"], inplace=True)
-    return df
+        col = "Nombre del Rep. Ventas"
+    elif "Rep. Ventas" in df.columns:
+        col = "Rep. Ventas"
 
+    if col:
+        temp = df[col].str.split(" - ", n=1, expand=True)
+        rep = temp[0]
+        codigo = temp[1].fillna(rep)
+        df["Rep. Ventas"] = rep
+        df["Codigo"] = codigo
+        if col != "Rep. Ventas":
+            df.drop(columns=[col], inplace=True)
+
+    return df
 
 # ============================================================
 # 4. MERGE Y FILTRADO
 # ============================================================
-def unir_tablas(df_checkin, df_ventas, df_visitas):
+def unir_tablas(df_checkin, df_visitas, df_ventas=None, venta=1):
+    if df_checkin is None or df_visitas is None:
+        raise ValueError("df_checkin y df_visitas no pueden ser None")
     df_merge = pd.merge(
         df_checkin[
             ["Codigo", "Rep. Ventas", "Visitas planificadas", "Visitas completadas", "Primer check-in"]
@@ -98,11 +124,18 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
         on="Codigo", how="outer"
     )
 
-    df_merge = pd.merge(
-        df_merge,
-        df_ventas[["bdr_id", "Orders", "Total Revenue"]],
-        left_on="Codigo", right_on="bdr_id", how="left"
-    )
+    if venta == 1:
+        df_merge = pd.merge(
+            df_merge,
+            df_ventas[["bdr_id", "Orders", "Total Revenue"]],
+            left_on="Codigo",
+            right_on="bdr_id",
+            how="left"
+        )
+        df_merge.drop(columns=["bdr_id"], inplace=True)
+    else:
+        df_merge["Orders"] = 0
+        df_merge["Total Revenue"] = 0
 
     df_merge = df_merge[
         [
@@ -122,7 +155,6 @@ def unir_tablas(df_checkin, df_ventas, df_visitas):
     df_merge["% GPS Ok > 2 min visitas"] = df_merge["% GPS Ok > 2 min visitas"].apply(
         lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
     )
-
     for col in ["Orders", "Total Revenue", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "GPS Ok > 2 min Visitas"]:
       df_merge[col] = pd.to_numeric(df_merge[col], errors="coerce").fillna(0)
 
@@ -160,7 +192,26 @@ def filtrar_codigos(df, codigos):
 # ============================================================
 # 6. TABLA CON COLORES (VISUAL)
 # ============================================================
-def crear_tabla_indicadores(df, width=1000, height=550):
+def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
+    if venta == 0:
+        cols = [
+            "Rep. Ventas",
+            "Visitas planificadas", "Visitas completadas",
+            "GPS Ok visitas", "% GPS Ok visitas",
+            "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas",
+            "Primer check-in"
+        ]
+    else:
+        cols = [
+            "Rep. Ventas", "Orders", "Total Revenue",
+            "Visitas planificadas", "Visitas completadas",
+            "GPS Ok visitas", "% GPS Ok visitas",
+            "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas",
+            "Primer check-in"
+        ]
+
+    df = df[cols]
+  
     def gradient_color(values):
         vals = np.array(values, dtype=float)
         min_v, max_v, mean_v = np.nanmin(vals), np.nanmax(vals), np.nanmean(vals)
@@ -219,18 +270,22 @@ def crear_tabla_indicadores(df, width=1000, height=550):
     col_index = df.columns.get_loc("% GPS Ok > 2 min visitas")
     header_colors[col_index] = '#A1D1FE'
 
-    fill_colors = [
-        ['white'] * len(df),
-        ['white'] * len(df),
-        ['white'] * len(df),
-        ['white'] * len(df),
-        ['white'] * len(df),
-        ['white'] * len(df),
-        gps_ok_colors,
-        ['white'] * len(df),
-        gps_ok2_colors,
-        checkin_colors
-    ]
+    def generar_fill_colors(df, colores_especiales):
+        fill_colors = []
+        for col in df.columns:
+            if col in colores_especiales:
+                fill_colors.append(colores_especiales[col])
+            else:
+                fill_colors.append(['white'] * len(df))
+        return fill_colors
+
+    colores_especiales = {
+        "% GPS Ok visitas": gps_ok_colors,
+        "% GPS Ok > 2 min visitas": gps_ok2_colors,
+        "Primer check-in": checkin_colors
+    }
+
+    fill_colors = generar_fill_colors(df, colores_especiales)
 
     fig = go.Figure(data=[go.Table(
         header=dict(values=list(df.columns),
@@ -248,17 +303,36 @@ def crear_tabla_indicadores(df, width=1000, height=550):
 # ============================================================
 # 7. PIPELINE                     
 # ============================================================
-def ejecutar_pipeline(df_checkin, df_ventas, df_visitas, codigos, width=1000, height=550):
+def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, venta = 1, width=1000, height=550):
 
     df_checkin = separar_nombre_codigo(limpiar_df(df_checkin))
-    df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
     df_visitas = separar_nombre_codigo(limpiar_df(df_visitas))
 
-    df_merge = unir_tablas(df_checkin, df_ventas, df_visitas)
+    if venta == 0:
+      df_merge = unir_tablas(df_checkin, df_visitas, venta=venta)
+    elif venta == 1:
+      df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
+      df_merge = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
+
     df_filtrado = filtrar_codigos(df_merge, codigos)
 
-    fig = crear_tabla_indicadores(df_filtrado, width=width, height=height)
+    fig = crear_tabla_indicadores(df_filtrado, venta=venta, width=width, height=height)
     print("Pipeline completado.")
     return df_filtrado, fig
 
+# ============================================================
+# 8. DESCARGAR EXCEL                     
+# ============================================================
+def generar_excel(df_xl, nombre_archivo = None):
+    """
+    Guarda el DataFrame procesado como Excel y devuelve el nombre de archivo generado.
+    Si no se pasa nombre_archivo, se genera uno con formato 'mes ddmmyyyy.xlsx'.
+    """
+    if not nombre_archivo:
+        fecha_actual = datetime.now()
+        nombre_archivo = f"resultado-{fecha_actual.strftime('%d%m%Y')}.csv"
+    if not nombre_archivo.lower().endswith(".xlsx"):
+        nombre_archivo += ".xlsx"
+    df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
+    return nombre_archivo
