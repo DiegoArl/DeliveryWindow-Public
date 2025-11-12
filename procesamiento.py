@@ -254,7 +254,13 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
         if 'a.m.' in am_pm and h == 12:
             h = 0
         times.append(h * 3600 + m * 60 + s)
-    min_t, max_t = min(filter(None, times)), max(filter(None, times))
+
+    valid_times = [t for t in times if t is not None]
+    if valid_times:
+      min_t, max_t = min(valid_times), max(valid_times)
+    else:
+      min_t, max_t = None, None
+    #min_t, max_t = min(filter(None, times)), max(filter(None, times))
     checkin_colors = []
     for t in times:
         if t is None:
@@ -307,12 +313,9 @@ def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, venta = 1, wid
 
     df_checkin = separar_nombre_codigo(limpiar_df(df_checkin))
     df_visitas = separar_nombre_codigo(limpiar_df(df_visitas))
-
-    if venta == 0:
-      df_merge = unir_tablas(df_checkin, df_visitas, venta=venta)
-    elif venta == 1:
-      df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
-      df_merge = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
+    df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
+    
+    df_merge = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
 
     df_filtrado = filtrar_codigos(df_merge, codigos)
 
@@ -336,4 +339,5 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
 
