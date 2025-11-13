@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from datetime import datetime
 
 def construir_df(ruta_excel):
@@ -27,7 +28,7 @@ def construir_df(ruta_excel):
         lambda x: dias_semana if "TODOSLOSDIAS" in str(x) else str(x)
     )
     df_filtrado["dia_visita"] = df_filtrado["dia_visita"].apply(
-        lambda x: x if isinstance(x, list) else str(x).split("Y")
+        lambda x: x if isinstance(x, list) else str(x).re.split(r"Y|,", str(x))
     )
     df_filtrado = df_filtrado.explode("dia_visita", ignore_index=True)
     df_filtrado["dia_visita"] = df_filtrado["dia_visita"].str.strip().str.upper()
@@ -101,6 +102,7 @@ def generar_csv(df_csv, nombre_archivo = None):
     df_csv.to_csv(nombre_archivo, index=False, encoding="utf-8-sig")
 
     return nombre_archivo
+
 
 
 
