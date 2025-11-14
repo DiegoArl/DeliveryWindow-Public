@@ -99,6 +99,9 @@ def separar_nombre_codigo(df):
 
     if col:
         temp = df[col].str.split(" - ", n=1, expand=True)
+        if temp.shape[1] == 1:
+            temp[1] = None
+        
         rep = temp[0]
         codigo = temp[1].fillna(rep)
         df["Rep. Ventas"] = rep
@@ -339,6 +342,7 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
 
 
 
