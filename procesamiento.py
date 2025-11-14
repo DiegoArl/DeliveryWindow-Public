@@ -28,12 +28,12 @@ def cargar_y_clasificar_archivos():
         "Visitas planificadas con pedidos", "GPS OK con pedidos"
     ]
 
-    VISITAS_MTD = [
+    CHECK_IN_MTD = [
         "Nombre del Rep. Ventas", "Fecha", "Visitas planificadas", "Visitas completadas", "Primer check-in",
         "Último check-out", "Duración promedio de la visita (min:sec)", "Tiempo total dentro de los PDV (H)", "Ruta Efectiva"
     ]
 
-    CHECK_IN_MTD = [
+    VISITAS_MTD = [
         "Rep. Ventas", "Fecha", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "% GPS Ok visitas",
         "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas", "GPS > 2 min + Justificadas GPS Ok", "% GPS > 2 min + Justificadas GPS Ok", 
         "Visita con justificacion", "Visitas planificadas con pedidos", "GPS OK con pedidos"
@@ -342,7 +342,3 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
-
-
-
-
