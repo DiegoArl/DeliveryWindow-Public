@@ -33,7 +33,7 @@ def cargar_y_clasificar_archivos():
         "Último check-out", "Duración promedio de la visita (min:sec)", "Tiempo total dentro de los PDV (H)", "Ruta Efectiva"
     ]
 
-    VENTAS_MTD = [
+    CHECK_IN_MTD = [
         "Rep. Ventas", "Fecha", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "% GPS Ok visitas",
         "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas", "GPS > 2 min + Justificadas GPS Ok", "% GPS > 2 min + Justificadas GPS Ok", 
         "Visita con justificacion", "Visitas planificadas con pedidos", "GPS OK con pedidos"
@@ -56,10 +56,10 @@ def cargar_y_clasificar_archivos():
 
         headers = list(df.columns)
 
-        if headers == CHECK_IN_HEADERS:
+        if headers == CHECK_IN_HEADERS or headers == CHECK_IN_MTD:
             df_checkin = df
             print(f"{name}: identificado como Check_In")
-        elif headers == VENTAS_HEADERS or headers == VENTAS_MTD:
+        elif headers == VENTAS_HEADERS:
             df_ventas = df
             print(f"{name}: identificado como Ventas")
         elif headers == VISITAS_HEADERS or headers == VISITAS_MTD:
@@ -339,5 +339,6 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
 
 
