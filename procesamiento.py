@@ -320,11 +320,13 @@ def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, venta = 1, wid
     
     df_merge = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
 
-    df_filtrado = filtrar_codigos(df_merge, codigos)
-
-    fig = crear_tabla_indicadores(df_filtrado, venta=venta, width=width, height=height)
+    for c in codigos:
+      df_filtrado = filtrar_codigos(df_merge, c)
+      fig = crear_tabla_indicadores(df_filtrado, venta=venta, width=width, height=height)
+      fig.show()
+        
     print("Pipeline completado.")
-    return df_filtrado, fig
+    return df_filtrado
 
 # ============================================================
 # 8. DESCARGAR EXCEL                     
@@ -342,3 +344,4 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
