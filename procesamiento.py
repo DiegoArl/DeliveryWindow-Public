@@ -215,25 +215,23 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
 
     df = df[cols]
   
-    def gradient_color(values):
-        vals = np.array(values, dtype=float)
-        min_v, max_v, mean_v = np.nanmin(vals), np.nanmax(vals), np.nanmean(vals)
+    def gradient_color(values, thresholds=(30, 60, 80)):
+        t1, t2, t3 = thresholds
         colors = []
-        for v in vals:
+
+        for v in values:
             if np.isnan(v):
-                colors.append('white')
+                colors.append("white")
                 continue
-            if v <= mean_v:
-                ratio = (v - min_v) / (mean_v - min_v) if mean_v != min_v else 0
-                r = int(248 + (251 - 248) * ratio)
-                g = int(105 + (233 - 105) * ratio)
-                b = int(108 + (130 - 108) * ratio)
+
+            if v < t1:
+                colors.append("rgb(248,105,108)")
+            elif v < t2:
+                colors.append("rgb(251,233,130)")
+            elif v < t3:
+                colors.append("rgb(251,190,123)")
             else:
-                ratio = (v - mean_v) / (max_v - mean_v) if max_v != mean_v else 0
-                r = int(251 + (99 - 251) * ratio)
-                g = int(233 + (190 - 233) * ratio)
-                b = int(130 + (123 - 130) * ratio)
-            colors.append(f'rgb({r},{g},{b})')
+                colors.append("rgb(99,190,123)")
         return colors
         
     gps_ok_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok visitas"]])
@@ -344,4 +342,5 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
 
