@@ -199,7 +199,7 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
     if venta == 0:
         cols = [
             "Rep. Ventas",
-            "Visitas planificadas", "Visitas completadas",
+            "Visitas planificadas",
             "GPS Ok visitas", "% GPS Ok visitas",
             "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas",
             "Primer check-in"
@@ -207,7 +207,7 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
     else:
         cols = [
             "Rep. Ventas", "Orders", "Total Revenue",
-            "Visitas planificadas", "Visitas completadas",
+            "Visitas planificadas",
             "GPS Ok visitas", "% GPS Ok visitas",
             "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas",
             "Primer check-in"
@@ -342,5 +342,6 @@ def generar_excel(df_xl, nombre_archivo = None):
     df_xl.to_excel(nombre_archivo, index=False, engine="openpyxl")
 
     return nombre_archivo
+
 
 
