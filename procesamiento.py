@@ -350,7 +350,16 @@ def generar_excel(df_xl, nombre_archivo = None):
 # ============================================================
 
 def cargar_archivos():
-  columnas_longitud = {'codcia': 3, 'domic': 3,'codclte': 6, 'vendedor': 5}
+  columnas_str = {
+    "codcia":str,
+    "codclte":str,
+    "domic":str,
+    "numero_pedido":str,
+    "codigoproducto":str,
+    "vendedor":str,
+    "Cod Cliente":str,
+    "Clave del Cliente (15 dígitos)":str
+  }
   uploaded = files.upload()
   all_dfs = []
   for name in uploaded.keys():
@@ -368,13 +377,14 @@ def cargar_archivos():
     print("No se cargaron archivos.")
     return None
 
-def agregar_ceros(df, columnas_longitud=columnas_longitud):
+def agregar_ceros(df):
+  columnas_longitud = {'codcia': 3, 'domic': 3,'codclte': 6, 'vendedor': 5}
   for columna, longitud in columnas_longitud.items():
     if columna in df.columns:
       df[columna] = df[columna].astype(str).str.zfill(longitud)
   return df
 
-def procesar_df(df, codigos_permitidos=None, encabezado=encabezado):
+def procesar_df(df, codigos_permitidos=None):
   df = df.copy()
   encabezado = [
       "fecha",
@@ -458,5 +468,6 @@ def AdopcionVendedores(df_users, codigos_permitidos=None):
     df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
     
     return df_procesado
+
 
 
