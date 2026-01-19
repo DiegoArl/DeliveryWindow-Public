@@ -454,8 +454,9 @@ def modelado(df, df_users):
 
   return df_modelado_tipo_p
 
-def AdopcionVendedores(df_users, codigos_permitidos=None)
+def AdopcionVendedores(df_users, codigos_permitidos=None):
     df = cargar_archivos()
     df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
     
     return df_procesado
+
