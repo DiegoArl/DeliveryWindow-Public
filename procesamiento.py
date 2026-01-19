@@ -514,9 +514,10 @@ def AdopcionVendedores(df_users, width=1000, height=550):
     df = cargar_archivos()
     df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
 
-    fig = crear_tabla_indicadores(df_procesado, width=width, height=height)
+    fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
     return df_procesado
+
 
 
 
