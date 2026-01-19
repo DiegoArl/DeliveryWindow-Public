@@ -197,6 +197,35 @@ def filtrar_codigos(df, codigos):
 # ============================================================
 # 6. TABLA CON COLORES (VISUAL)
 # ============================================================
+
+def gradient_color(values, thresholds=(30, 60, 80)):
+    t1, t2, t3 = thresholds
+    colors = []
+
+    for v in values:
+        if np.isnan(v):
+            colors.append("white")
+            continue
+
+        if v < t1:
+            colors.append("rgb(248,105,108)")
+        elif v < t2:
+            colors.append("rgb(251,233,130)")
+        elif v < t3:
+            colors.append("rgb(251,190,123)")
+        else:
+            colors.append("rgb(99,190,123)")
+    return colors
+
+def generar_fill_colors(df, colores_especiales):
+    fill_colors = []
+    for col in df.columns:
+        if col in colores_especiales:
+             fill_colors.append(colores_especiales[col])
+        else:
+             fill_colors.append(['white'] * len(df))
+    return fill_colors
+    
 def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
     if venta == 0:
         cols = [
@@ -216,26 +245,7 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
         ]
 
     df = df[cols]
-  
-    def gradient_color(values, thresholds=(30, 60, 80)):
-        t1, t2, t3 = thresholds
-        colors = []
-
-        for v in values:
-            if np.isnan(v):
-                colors.append("white")
-                continue
-
-            if v < t1:
-                colors.append("rgb(248,105,108)")
-            elif v < t2:
-                colors.append("rgb(251,233,130)")
-            elif v < t3:
-                colors.append("rgb(251,190,123)")
-            else:
-                colors.append("rgb(99,190,123)")
-        return colors
-        
+    
     gps_ok_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok visitas"]])
     gps_ok2_colors = gradient_color([float(x.strip('%')) for x in df["% GPS Ok > 2 min visitas"]])
 
@@ -278,15 +288,6 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
     header_colors = ['lightgray'] * len(df.columns)
     col_index = df.columns.get_loc("% GPS Ok > 2 min visitas")
     header_colors[col_index] = '#A1D1FE'
-
-    def generar_fill_colors(df, colores_especiales):
-        fill_colors = []
-        for col in df.columns:
-            if col in colores_especiales:
-                fill_colors.append(colores_especiales[col])
-            else:
-                fill_colors.append(['white'] * len(df))
-        return fill_colors
 
     colores_especiales = {
         "% GPS Ok visitas": gps_ok_colors,
@@ -434,12 +435,12 @@ def modelado(df, df_users):
 
   df_modelado['CodVendedor'] = df_modelado['DT']+ '001-' + df_modelado['vendedor']
   df_modelado = df_modelado[df_modelado['CodVendedor'].isin(df_users)]
-  df_modelado_tipo = df_modelado.groupby(["CodVendedor", "tipo_pedido"]).agg(
+  df_modelado_tipo = df_modelado.groupby(["nombrevendedor", "tipo_pedido"]).agg(
             pedidos=("numero_pedido", "nunique")
         ).reset_index()
 
   df_modelado_tipo_p = df_modelado_tipo.pivot_table(
-      index= ["CodVendedor"],
+      index= ["nombrevendedor"],
       columns= ["tipo_pedido"],
       values= ["pedidos"],
       aggfunc= "sum"
@@ -461,13 +462,62 @@ def modelado(df, df_users):
   df_modelado_tipo_p['Adopción BEES'] = (df_modelado_tipo_p['pedidos_B2B_APP'] + df_modelado_tipo_p['pedidos_B2B_FORCE'])/df_modelado_tipo_p['pedidos_total']
   df_modelado_tipo_p['Adopción NON BEES'] = 1 - df_modelado_tipo_p['Adopción BEES']
 
+  df_modelado_tipo_p["Adopción BEES"] = df_modelado_tipo_p["Adopción BEES"].apply(
+        lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
+    )
+  df_modelado_tipo_p["Adopción NON BEES"] = df_modelado_tipo_p["Adopción NON BEES"].apply(
+        lambda x: f"{x*100:.2f}%" if x <= 1 else f"{x:.2f}%"
+  )
   return df_modelado_tipo_p
 
-def AdopcionVendedores(df_users, codigos_permitidos=None):
+def crear_tabla_adopcion(df, width=1000, height=550):
+    cols = [
+        "nombrevendedor",
+        "pedidos_B2B_APP",
+        "pedidos_B2B_FORCE",
+        "pedidos_NON BEES",
+        "Adopción BEES",
+        "Adopción NON BEES"
+    ]
+
+    df = df[cols]
+    
+    adop_ok_colors = gradient_color([float(x.strip('%')) for x in df["Adopción BEES"]])
+    adop_ok2_colors = gradient_color([float(x.strip('%')) for x in df["Adopción NON BEES"]])
+
+    header_colors = ['lightgray'] * len(df.columns)
+    col_index = df.columns.get_loc("Adopción BEES")
+    header_colors[col_index] = '#A1D1FE'
+
+    colores_especiales = {
+        "Adopción BEES": adop_ok_colors,
+        "Adopción NON BEES": adop_ok2_colors
+    }
+
+    fill_colors = generar_fill_colors(df, colores_especiales)
+
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=list(df.columns),
+                    fill_color=header_colors,
+                    align='left',
+                    font=dict(color='black', size=12)),
+        cells=dict(values=[df[c] for c in df.columns],
+                   fill_color=fill_colors,
+                   align='left',
+                   font=dict(color='black', size=11))
+    )])
+    fig.update_layout(width=width, height=height)
+
+    return fig
+
+def AdopcionVendedores(df_users, width=1000, height=550):
     df = cargar_archivos()
     df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
-    
+
+    fig = crear_tabla_indicadores(df_procesado, width=width, height=height)
+    fig.show()
     return df_procesado
+
 
 
 
