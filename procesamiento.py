@@ -140,6 +140,8 @@ def unir_tablas(df_checkin, df_visitas, df_ventas=None, venta=1):
         df_merge["Orders"] = 0
         df_merge["Total Revenue"] = 0
 
+    df_users = df_checkin[["Codigo", "Rep. Ventas"]].drop_duplicates().copy()
+    
     df_merge = df_merge[
         [
             "Rep. Ventas", "Codigo", "Orders", "Total Revenue",
@@ -161,7 +163,7 @@ def unir_tablas(df_checkin, df_visitas, df_ventas=None, venta=1):
     for col in ["Orders", "Total Revenue", "Visitas planificadas", "Visitas completadas", "GPS Ok visitas", "GPS Ok > 2 min Visitas"]:
       df_merge[col] = pd.to_numeric(df_merge[col], errors="coerce").fillna(0)
 
-    return df_merge
+    return df_merge, df_users
 
 # ============================================================
 # 5. FILTRAR CÓDIGOS, LIMPIAR VALORES Y SUBTOTAL
@@ -316,7 +318,7 @@ def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, venta = 1, wid
     df_visitas = separar_nombre_codigo(limpiar_df(df_visitas))
     df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
     
-    df_merge = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
+    df_merge, df_users = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
 
     for c in codigos:
       df_filtrado = filtrar_codigos(df_merge, c)
@@ -324,7 +326,7 @@ def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, venta = 1, wid
       fig.show()
         
     print("Pipeline completado.")
-    return df_filtrado
+    return df_filtrado, df_users
 
 # ============================================================
 # 8. DESCARGAR EXCEL                     
@@ -343,5 +345,117 @@ def generar_excel(df_xl, nombre_archivo = None):
 
     return nombre_archivo
 
+# ============================================================
+# 9. PROCESAMIENTO VENDEDOR                     
+# ============================================================
+encabezado = [
+  "fecha",
+  "Cod Cliente",
+  "nombrecliente",
+  "vendedor",
+  "nombrevendedor",
+  "vtadvo",
+  "canal",
+  "tipo_pedido",
+  "numero_pedido",
+  "DescripcionCategoria",
+  "codigoproducto",
+  "descrpcionproducto",
+  "cajas",
+  "soles"
+]
+columnas_longitud = {'codcia': 3, 'domic': 3,'codclte': 6, 'vendedor': 5}
+
+def cargar_archivos():
+  uploaded = files.upload()
+  all_dfs = []
+  for name in uploaded.keys():
+        ext = name.split('.')[-1].lower()
+        df = pd.read_excel(name, dtype={c: str for c in columnas_str}) if ext in ["xlsx", "xls"] else pd.read_csv(name) if ext == "csv" else None
+        if df is None:
+            print(f"{name}: formato no soportado, omitido")
+            continue
+        all_dfs.append(df)
+
+  if all_dfs:
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+    return combined_df
+  else:
+    print("No se cargaron archivos.")
+    return None
+
+def agregar_ceros(df, columnas_longitud=columnas_longitud):
+  for columna, longitud in columnas_longitud.items():
+    if columna in df.columns:
+      df[columna] = df[columna].astype(str).str.zfill(longitud)
+  return df
+
+def procesar_df(df, codigos_permitidos=None, encabezado=encabezado):
+  df = df.copy()
+
+  if 'Cod Cliente' not in df.columns:
+    df = agregar_ceros(df)
+    df['Cod Cliente'] = df['codcia'] + '001' + df['codclte'] + df['domic']
+
+  df = df[encabezado]
+  df['tipo_pedido'] = df['tipo_pedido'].apply(lambda x: 'NON BEES' if not isinstance(x, str) or x[:3] != 'B2B' else x)
 
 
+  mask_producto = (
+        ~df["codigoproducto"].astype(str).str.startswith("70") &
+        ~df["codigoproducto"].astype(str).str.startswith("90")
+  )
+  if codigos_permitidos is not None:
+        mask_producto |= df["codigoproducto"].astype(str).isin(codigos_permitidos)
+
+  df = df[
+      (df["tipo_pedido"] != "B2B_WEB") &
+      (df["vtadvo"] == "V") &
+      (df["canal"] == "BODEGA") &
+      mask_producto
+  ]
+  df["fecha"] = pd.to_datetime(df["fecha"], format="%Y/%m/%d", errors="coerce")
+  df["mes"] = df["fecha"].dt.to_period("M").astype(str)
+  df["mes_n"] = df['mes'].astype(str).str[-2:]
+  df['DT'] = df["Cod Cliente"].astype(str).str[:3]
+  return df
+
+def modelado(df, df_users):
+  df_modelado = df.copy()
+
+  df_modelado['CodVendedor'] = df_modelado['DT']+ '001-' + df_modelado['vendedor']
+  df_modelado = df_modelado[df_modelado['CodVendedor'].isin(df_users)]
+  df_modelado_tipo = df_modelado.groupby(["CodVendedor", "tipo_pedido"]).agg(
+            pedidos=("numero_pedido", "nunique")
+        ).reset_index()
+
+  df_modelado_tipo_p = df_modelado_tipo.pivot_table(
+      index= ["CodVendedor"],
+      columns= ["tipo_pedido"],
+      values= ["pedidos"],
+      aggfunc= "sum"
+  ).reset_index()
+
+  df_modelado_tipo_p.fillna(0, inplace=True)
+
+  df_modelado_tipo_p.columns = [
+      f"{col1}_{col2}" if col2 != "" else col1
+      for col1, col2 in df_modelado_tipo_p.columns.to_flat_index()
+  ]
+  df_modelado_tipo_p['pedidos_total'] = 0
+
+  for c in df_modelado_tipo_p.columns:
+    map = c.split("_")
+    if  len(map) > 1 and map[0] == 'pedidos' and map[1] != 'total':
+      df_modelado_tipo_p['pedidos_total'] += df_modelado_tipo_p[c]
+
+  df_modelado_tipo_p['Adopción BEES'] = (df_modelado_tipo_p['pedidos_B2B_APP'] + df_modelado_tipo_p['pedidos_B2B_FORCE'])/df_modelado_tipo_p['pedidos_total']
+  df_modelado_tipo_p['Adopción NON BEES'] = 1 - df_modelado_tipo_p['Adopción BEES']
+
+  return df_modelado_tipo_p
+
+def AdopcionVendedores(df_users, codigos_permitidos=None)
+    df = cargar_archivos()
+    df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
+    
+    return df_procesado
