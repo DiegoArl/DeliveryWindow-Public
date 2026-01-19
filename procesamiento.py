@@ -348,25 +348,9 @@ def generar_excel(df_xl, nombre_archivo = None):
 # ============================================================
 # 9. PROCESAMIENTO VENDEDOR                     
 # ============================================================
-encabezado = [
-  "fecha",
-  "Cod Cliente",
-  "nombrecliente",
-  "vendedor",
-  "nombrevendedor",
-  "vtadvo",
-  "canal",
-  "tipo_pedido",
-  "numero_pedido",
-  "DescripcionCategoria",
-  "codigoproducto",
-  "descrpcionproducto",
-  "cajas",
-  "soles"
-]
-columnas_longitud = {'codcia': 3, 'domic': 3,'codclte': 6, 'vendedor': 5}
 
 def cargar_archivos():
+  columnas_longitud = {'codcia': 3, 'domic': 3,'codclte': 6, 'vendedor': 5}
   uploaded = files.upload()
   all_dfs = []
   for name in uploaded.keys():
@@ -392,7 +376,22 @@ def agregar_ceros(df, columnas_longitud=columnas_longitud):
 
 def procesar_df(df, codigos_permitidos=None, encabezado=encabezado):
   df = df.copy()
-
+  encabezado = [
+      "fecha",
+      "Cod Cliente",
+      "nombrecliente",
+      "vendedor",
+      "nombrevendedor",
+      "vtadvo",
+      "canal",
+      "tipo_pedido",
+      "numero_pedido",
+      "DescripcionCategoria",
+      "codigoproducto",
+      "descrpcionproducto",
+      "cajas",
+      "soles"
+    ]
   if 'Cod Cliente' not in df.columns:
     df = agregar_ceros(df)
     df['Cod Cliente'] = df['codcia'] + '001' + df['codclte'] + df['domic']
@@ -459,4 +458,5 @@ def AdopcionVendedores(df_users, codigos_permitidos=None):
     df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
     
     return df_procesado
+
 
