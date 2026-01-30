@@ -312,7 +312,7 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
 
     return fig
 
-def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=False):
+def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=True):
     df = df.copy()
     df_usuarios = df_usuarios.copy()
     
@@ -547,6 +547,7 @@ def AdopcionVendedores(df_users, mapa_equipo, width=1000, height=550):
     fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
     return df_procesado
+
 
 
 
