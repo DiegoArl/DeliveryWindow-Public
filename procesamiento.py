@@ -173,6 +173,7 @@ def filtrar_codigos(df, codigos):
     df["Primer check-in"] = df["Primer check-in"].fillna("-")
 
     subtotal = { 
+        "Equipo": "-",
         "Rep. Ventas": "TOTAL", 
         "Orders": df["Orders"].sum(), 
         "Total Revenue": df["Total Revenue"].sum(),
@@ -229,7 +230,7 @@ def generar_fill_colors(df, colores_especiales):
 def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
     if venta == 0:
         cols = [
-            "Rep. Ventas",
+            "Equipo", "Rep. Ventas",
             "Visitas planificadas",
             "GPS Ok visitas", "% GPS Ok visitas",
             "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas",
@@ -237,8 +238,8 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
         ]
     else:
         cols = [
-            "Rep. Ventas", "Orders", "Total Revenue",
-            "Visitas planificadas",
+            "Equipo", "Rep. Ventas", "Orders", 
+            "Total Revenue", "Visitas planificadas",
             "GPS Ok visitas", "% GPS Ok visitas",
             "GPS Ok > 2 min Visitas", "% GPS Ok > 2 min visitas",
             "Primer check-in"
@@ -310,19 +311,44 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
     fig.update_layout(width=width, height=height)
 
     return fig
+
+def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=False):
+    df = df.copy()
+    df_usuarios = df_usuarios.copy()
+    
+    df_usuarios["Equipo"] = df_usuarios["Codigo"].map(mapa_equipo)
+    
+    if adopcion:
+        df = df.merge(
+            usuarios[["Rep. Ventas", "Equipo"]],
+            on="Rep. Ventas",
+            how="left"
+        )
+    else:
+        df = df.merge(
+            usuarios[["Rep. Ventas", "Equipo"]],
+            left on="nombrevendedor",
+            right on= "Rep. Ventas",
+            how="left"
+        ).drop(columns="Rep. Ventas")
+    
+    cols = ["Equipo"] + [c for c in df.columns if c != "Equipo"]
+    df = df[cols]
+    return df
 # ============================================================
 # 7. PIPELINE                     
 # ============================================================
-def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, venta = 1, width=1000, height=550):
+def ejecutar_pipeline(df_checkin, df_visitas, df_ventas, codigos, mapa_equipo, venta = 1, width=1000, height=550):
 
     df_checkin = separar_nombre_codigo(limpiar_df(df_checkin))
     df_visitas = separar_nombre_codigo(limpiar_df(df_visitas))
     df_ventas = separar_nombre_codigo(limpiar_df(df_ventas))
     
     df_merge, df_users = unir_tablas(df_checkin, df_visitas, df_ventas, venta=venta)
-
+    df_merge_user = agregar_equipo(df_merge, df_users, mapa_equipo)
+    
     for c in codigos:
-      df_filtrado = filtrar_codigos(df_merge, c)
+      df_filtrado = filtrar_codigos(df_merge_user, c)
       fig = crear_tabla_indicadores(df_filtrado, venta=venta, width=width, height=height)
       fig.show()
         
@@ -410,7 +436,6 @@ def procesar_df(df, codigos_permitidos=None):
   df = df[encabezado]
   df['tipo_pedido'] = df['tipo_pedido'].apply(lambda x: 'NON BEES' if not isinstance(x, str) or x[:3] != 'B2B' else x)
 
-
   mask_producto = (
         ~df["codigoproducto"].astype(str).str.startswith("70") &
         ~df["codigoproducto"].astype(str).str.startswith("90")
@@ -472,6 +497,7 @@ def modelado(df, df_users):
 
 def crear_tabla_adopcion(df, width=1000, height=550):
     cols = [
+        "Equipo",
         "nombrevendedor",
         "pedidos_B2B_APP",
         "pedidos_B2B_FORCE",
@@ -514,13 +540,14 @@ def crear_tabla_adopcion(df, width=1000, height=550):
 
     return fig
 
-def AdopcionVendedores(df_users, width=1000, height=550):
+def AdopcionVendedores(df_users, mapa_equipo, width=1000, height=550):
     df = cargar_archivos()
-    df_procesado = modelado(procesar_df(agregar_ceros(df)),df_users)
-
+    df_procesado = agregar_equipo(modelado(procesar_df(agregar_ceros(df)),df_users), df_users, mapa_equipo, adopcion=True)
+    
     fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
     return df_procesado
+
 
 
 
