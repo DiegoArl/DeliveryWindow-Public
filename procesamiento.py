@@ -482,6 +482,10 @@ def crear_tabla_adopcion(df, width=1000, height=550):
 
     df = df[cols]
     
+    df = df.assign(
+      temp_val=pd.to_numeric(df["Adopción BEES"].astype(str).str.replace("%", ""), errors="coerce")
+    ).sort_values("temp_val", ascending=False).drop(columns="temp_val").reset_index(drop=True)
+    
     adop_ok_colors = gradient_color([float(x.strip('%')) for x in df["Adopción BEES"]])
     adop_ok2_colors = gradient_color([float(x.strip('%')) for x in df["Adopción NON BEES"]])
 
@@ -517,6 +521,7 @@ def AdopcionVendedores(df_users, width=1000, height=550):
     fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
     return df_procesado
+
 
 
 
