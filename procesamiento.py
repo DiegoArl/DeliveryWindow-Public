@@ -320,13 +320,13 @@ def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=False):
     
     if adopcion:
         df = df.merge(
-            usuarios[["Rep. Ventas", "Equipo"]],
+            df_usuarios[["Rep. Ventas", "Equipo"]],
             on="Rep. Ventas",
             how="left"
         )
     else:
         df = df.merge(
-            usuarios[["Rep. Ventas", "Equipo"]],
+            df_usuarios[["Rep. Ventas", "Equipo"]],
             left_on="nombrevendedor",
             right_on= "Rep. Ventas",
             how="left"
@@ -547,6 +547,7 @@ def AdopcionVendedores(df_users, mapa_equipo, width=1000, height=550):
     fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
     return df_procesado
+
 
 
 
