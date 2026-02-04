@@ -555,6 +555,7 @@ def crear_tabla_adopcion(df, width=1000, height=550):
 def AdopcionVendedores(df_users, mapa_equipo, width=1000, height=550):
     df = cargar_archivos()
     df_procesado = agregar_equipo(modelado(procesar_df(agregar_ceros(df)),df_users), df_users, mapa_equipo, adopcion=1)
+    df_procesado = df_procesado[df_procesado["Equipo"].notna()]
     
     fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
@@ -707,6 +708,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
