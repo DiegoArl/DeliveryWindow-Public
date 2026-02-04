@@ -608,7 +608,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     out["true_ratio"] = out["true_count"] / out["total"]
     
     result = out.drop(columns="total").melt(
-        id_vars=["Rep. Ventas", "Task Name"],
+        id_vars=["Equipo", "Rep. Ventas", "Task Name"],
         value_vars=["true_count", "true_ratio"],
     ).pivot_table(
         index=["Equipo", "Rep. Ventas"],
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
