@@ -327,10 +327,10 @@ def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=0):
             )
 
         case 1:
-            df['Codigo'] = df['DT'] + '001-' + df['vendedor']
             df = df.merge(
                 df_usuarios,
-                on ="Codigo",
+                left_on="CodVendedor",
+                right_on="Codigo",
                 how="left"
             )
 
@@ -467,12 +467,12 @@ def procesar_df(df, codigos_permitidos=None):
   df["mes"] = df["fecha"].dt.to_period("M").astype(str)
   df["mes_n"] = df['mes'].astype(str).str[-2:]
   df['DT'] = df["Cod Cliente"].astype(str).str[:3]
+  df['CodVendedor'] = df['DT'] + '001-' + df['vendedor']
   return df
 
 def modelado(df, df_users):
   df_modelado = df.copy()
 
-  df_modelado['CodVendedor'] = df_modelado['DT']+ '001-' + df_modelado['vendedor']
   df_modelado = df_modelado[df_modelado['CodVendedor'].isin(df_users['Codigo'])]
   df_modelado_tipo = df_modelado.groupby(["nombrevendedor", "tipo_pedido"]).agg(
             pedidos=("numero_pedido", "nunique")
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
