@@ -598,7 +598,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     
     out = (
         tarea
-        .groupby(["Rep. Ventas", "Task Name"], as_index=False)
+        .groupby(["Equipo", "Rep. Ventas", "Task Name"], as_index=False)
         .agg(
             total=("Is Task Effective", "count"),
             true_count=("Is Task Effective", lambda x: (x == 'true').sum())
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
