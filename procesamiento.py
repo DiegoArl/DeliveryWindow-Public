@@ -312,25 +312,39 @@ def crear_tabla_indicadores(df, venta=1, width=1000, height=550):
 
     return fig
 
-def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=True):
+def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=0):
     df = df.copy()
     df_usuarios = df_usuarios.copy()
     
     df_usuarios["Equipo"] = df_usuarios["Codigo"].map(mapa_equipo)
     
-    if adopcion:
-        df = df.merge(
-            df_usuarios[["Rep. Ventas", "Equipo"]],
-            on="Rep. Ventas",
-            how="left"
-        )
-    else:
-        df = df.merge(
-            df_usuarios[["Rep. Ventas", "Equipo"]],
-            left_on="nombrevendedor",
-            right_on= "Rep. Ventas",
-            how="left"
-        ).drop(columns="Rep. Ventas")
+    match int(adopcion):
+        case 0:
+            df = df.merge(
+                df_usuarios[["Rep. Ventas", "Equipo"]],
+                on="Rep. Ventas",
+                how="left"
+            )
+
+        case 1:
+            df = df.merge(
+                df_usuarios[["Rep. Ventas", "Equipo"]],
+                left_on="nombrevendedor",
+                right_on="Rep. Ventas",
+                how="left"
+            ).drop(columns="Rep. Ventas")
+
+        case 2:
+            df = df.merge(
+                df_usuarios,
+                left_on="BDR_ID",
+                right_on="Codigo",
+                how="left"
+            ).drop(columns="Codigo")
+
+        case _:
+            raise ValueError("adopcion debe ser 0, 1 o 2")
+
     
     cols = ["Equipo"] + [c for c in df.columns if c != "Equipo"]
     df = df[cols]
@@ -542,14 +556,159 @@ def crear_tabla_adopcion(df, width=1000, height=550):
 
 def AdopcionVendedores(df_users, mapa_equipo, width=1000, height=550):
     df = cargar_archivos()
-    df_procesado = agregar_equipo(modelado(procesar_df(agregar_ceros(df)),df_users), df_users, mapa_equipo, adopcion=True)
+    df_procesado = agregar_equipo(modelado(procesar_df(agregar_ceros(df)),df_users), df_users, mapa_equipo, adopcion=1)
     
     fig = crear_tabla_adopcion(df_procesado, width=width, height=height)
     fig.show()
     return df_procesado
 
+# ============================================================
+# 10. TAREAS                                    
+# ============================================================
 
+def formato_tareas(df, df_users, mapa_equipo,):
+    def separar_csv(df_tareas):
+        df_tareas_2 = df_tareas.copy()
+        df_tareas_2 = df_tareas.iloc[:, 0].str.split(";", expand=True)
+        col = df_tareas.columns[0].split(";")
+        df_tareas_2.columns= col
+        return df_tareas_2
 
+    def gradient_colors(values, thresholds=(0.30, 0.60, 0.80)):
+        t1, t2, t3 = thresholds
+        styles = []
+
+        for v in values:
+            if pd.isna(v):
+                styles.append("")
+                continue
+
+            if v < t1:
+                styles.append("background-color: rgb(248,105,108)")
+            elif v < t2:
+                styles.append("background-color: rgb(251,233,130)")
+            elif v < t3:
+                styles.append("background-color: rgb(251,190,123)")
+            else:
+                styles.append("background-color: rgb(99,190,123)")
+        return styles
+
+    tarea = agregar_equipo(separar_csv(df.copy()), df_users.copy(), mapa_equipo.copy(), adopcion=2)
+    tarea = tarea[tarea["Equipo"].notna()]
+    
+    out = (
+        tarea
+        .groupby(["Rep. Ventas", "Task Name"], as_index=False)
+        .agg(
+            total=("Is Task Effective", "count"),
+            true_count=("Is Task Effective", lambda x: (x == 'true').sum())
+        )
+    )
+    
+    out["true_ratio"] = out["true_count"] / out["total"]
+    
+    result = out.drop(columns="total").melt(
+        id_vars=["Rep. Ventas", "Task Name"],
+        value_vars=["true_count", "true_ratio"],
+    ).pivot_table(
+        index=["Equipo", "Rep. Ventas"],
+        columns=["Task Name", "variable"],
+        values=["value"],
+        aggfunc= "sum"
+    ).fillna(0)
+
+    result.columns = result.columns.droplevel(0)
+
+    styled = (
+        result.head(10)
+        .style
+        .format(
+            "{:.2%}",
+            subset=pd.IndexSlice[:, pd.IndexSlice[:, "true_ratio"]]
+        )
+        .format(
+            "{:.0f}",
+            subset=pd.IndexSlice[:, pd.IndexSlice[:, "true_count"]]
+        )
+        
+        .apply(
+            gradient_colors,
+            subset=pd.IndexSlice[:, pd.IndexSlice[:, "true_ratio"]],
+            axis=0
+        )
+        .set_properties(**{
+            'font-family': 'Arial, sans-serif',
+            'font-size': '12px',
+            'border': '2px solid white', 
+            'text-align': 'center',
+            'vertical-align': 'middle'
+        })
+        .set_table_styles([
+            {
+                'selector': 'th, td',
+                'props': [
+                    ('font-family', 'Arial, sans-serif'),
+                    ('border', '1px solid white !important'),
+                    ('text-align', 'center'),
+                    ('padding', '8px')
+                ]
+            },
+            {
+                "selector": "th.col_heading",
+                "props": [
+                    ("background-color", "#e0e0e0"),
+                    ("color", "black"),
+                    ("font-weight", "bold"),
+                    ("border", "1px solid #bdbdbd")
+                ]
+            },
+            {
+                "selector": "th.row_heading",
+                "props": [
+                    ("background-color", "#e0e0e0"),
+                    ("color", "black"),
+                    ("font-weight", "bold"),
+                    ("border", "1px solid #282A2C")
+                ]
+            },
+            {
+                "selector": "th.blank",
+                "props": [
+                    ("background-color", "#e0e0e0"),
+                    ("border", "1px solid #282A2C")
+                ]
+            },
+            {
+                'selector': 'th',
+                'props': [
+                    ('background-color', '#d9d9d9'),
+                    ('color', 'black'),
+                    ('font-family', 'Arial, sans-serif'),
+                    ('font-weight', 'bold'),
+                    ('border', '1px solid #7f7f7f'),
+                    ('text-align', 'center')
+                ]
+            },
+            {
+                'selector': 'td',
+                'props': [
+                    ('border', '1px solid white'),
+                    ('font-family', 'Arial, sans-serif'),
+                    ('text-align', 'center'),
+                    ('font-weight', 'normal')
+                ]
+            },
+            {
+                'selector': '',
+                'props': [
+                    ('border-collapse', 'collapse'),
+                    ('border', 'none')
+                ]
+            }
+        ])
+    )
+
+    return styled
 
 
 
