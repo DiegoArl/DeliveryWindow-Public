@@ -473,7 +473,7 @@ def modelado(df, df_users):
   df_modelado = df.copy()
 
   df_modelado['CodVendedor'] = df_modelado['DT']+ '001-' + df_modelado['vendedor']
-  df_modelado = df_modelado[df_modelado['CodVendedor'].isin(df_users)]
+  df_modelado = df_modelado[df_modelado['CodVendedor'].isin(df_users['Codigo'])]
   df_modelado_tipo = df_modelado.groupby(["nombrevendedor", "tipo_pedido"]).agg(
             pedidos=("numero_pedido", "nunique")
         ).reset_index()
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
