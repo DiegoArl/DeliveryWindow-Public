@@ -474,12 +474,12 @@ def modelado(df, df_users):
   df_modelado = df.copy()
 
   df_modelado = df_modelado[df_modelado['CodVendedor'].isin(df_users['Codigo'])]
-  df_modelado_tipo = df_modelado.groupby(["nombrevendedor", "tipo_pedido"]).agg(
+  df_modelado_tipo = df_modelado.groupby(["CodVendedor", "tipo_pedido"]).agg(
             pedidos=("numero_pedido", "nunique")
         ).reset_index()
 
   df_modelado_tipo_p = df_modelado_tipo.pivot_table(
-      index= ["nombrevendedor"],
+      index= ["CodVendedor"],
       columns= ["tipo_pedido"],
       values= ["pedidos"],
       aggfunc= "sum"
@@ -516,8 +516,7 @@ def crear_tabla_adopcion(df, width=1000, height=550):
         "pedidos_B2B_APP",
         "pedidos_B2B_FORCE",
         "pedidos_NON BEES",
-        "Adopción BEES",
-        "Adopción NON BEES"
+        "Adopción BEES"
     ]
 
     df = df[cols]
@@ -527,15 +526,14 @@ def crear_tabla_adopcion(df, width=1000, height=550):
     ).sort_values("temp_val", ascending=False).drop(columns="temp_val").reset_index(drop=True)
     
     adop_ok_colors = gradient_color([float(x.strip('%')) for x in df["Adopción BEES"]])
-    adop_ok2_colors = gradient_color([float(x.strip('%')) for x in df["Adopción NON BEES"]])
+    #adop_ok2_colors = gradient_color([float(x.strip('%')) for x in df["Adopción NON BEES"]])
 
     header_colors = ['lightgray'] * len(df.columns)
     col_index = df.columns.get_loc("Adopción BEES")
     header_colors[col_index] = '#A1D1FE'
 
     colores_especiales = {
-        "Adopción BEES": adop_ok_colors,
-        "Adopción NON BEES": adop_ok2_colors
+        "Adopción BEES": adop_ok_colors
     }
 
     fill_colors = generar_fill_colors(df, colores_especiales)
@@ -709,6 +707,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
