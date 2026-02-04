@@ -512,7 +512,7 @@ def modelado(df, df_users):
 def crear_tabla_adopcion(df, width=1000, height=550):
     cols = [
         "Equipo",
-        "nombrevendedor",
+        "Rep. Ventas",
         "pedidos_B2B_APP",
         "pedidos_B2B_FORCE",
         "pedidos_NON BEES",
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
