@@ -327,12 +327,12 @@ def agregar_equipo(df, df_usuarios, mapa_equipo, adopcion=0):
             )
 
         case 1:
+            df['Codigo'] = df['DT'] + '001-' + df['vendedor']
             df = df.merge(
-                df_usuarios[["Rep. Ventas", "Equipo"]],
-                left_on="nombrevendedor",
-                right_on="Rep. Ventas",
+                df_usuarios,
+                on ="Codigo",
                 how="left"
-            ).drop(columns="Rep. Ventas")
+            )
 
         case 2:
             df = df.merge(
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
