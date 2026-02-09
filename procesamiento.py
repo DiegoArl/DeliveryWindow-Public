@@ -603,9 +603,9 @@ def formato_tareas(df, df_users, mapa_equipo,):
             true_count=("Is Task Effective", lambda x: (x == 'true').sum())
         )
     )
-    
-    out["%Alcance"] = out["true_count"] / out["total"]
+
     out = out.rename(columns={"true_count": "tarea efectiva"})
+    out["%Alcance"] = out["tarea efectiva"] / out["total"]
     
     result = out.drop(columns="total").melt(
         id_vars=["Equipo", "Rep. Ventas", "Task Name"],
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
