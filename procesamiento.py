@@ -604,11 +604,12 @@ def formato_tareas(df, df_users, mapa_equipo,):
         )
     )
     
-    out["true_ratio"] = out["true_count"] / out["total"]
+    out["%Alcance"] = out["true_count"] / out["total"]
+    out.rename(columns={"true_count": "tarea efectiva"})
     
     result = out.drop(columns="total").melt(
         id_vars=["Equipo", "Rep. Ventas", "Task Name"],
-        value_vars=["true_count", "true_ratio"],
+        value_vars=["tarea efectiva"", "%Alcance"],
     ).pivot_table(
         index=["Equipo", "Rep. Ventas"],
         columns=["Task Name", "variable"],
@@ -623,16 +624,16 @@ def formato_tareas(df, df_users, mapa_equipo,):
         .style
         .format(
             "{:.2%}",
-            subset=pd.IndexSlice[:, pd.IndexSlice[:, "true_ratio"]]
+            subset=pd.IndexSlice[:, pd.IndexSlice[:, "%Alcance"]]
         )
         .format(
             "{:.0f}",
-            subset=pd.IndexSlice[:, pd.IndexSlice[:, "true_count"]]
+            subset=pd.IndexSlice[:, pd.IndexSlice[:, "tarea efectiva"]]
         )
         
         .apply(
             gradient_colors,
-            subset=pd.IndexSlice[:, pd.IndexSlice[:, "true_ratio"]],
+            subset=pd.IndexSlice[:, pd.IndexSlice[:, "%Alcance"]],
             axis=0
         )
         .set_properties(**{
@@ -708,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
