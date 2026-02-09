@@ -609,7 +609,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     
     result = out.drop(columns="total").melt(
         id_vars=["Equipo", "Rep. Ventas", "Task Name"],
-        value_vars=["tarea efectiva"", "%Alcance"],
+        value_vars=["tarea efectiva", "%Alcance"],
     ).pivot_table(
         index=["Equipo", "Rep. Ventas"],
         columns=["Task Name", "variable"],
@@ -709,6 +709,7 @@ def formato_tareas(df, df_users, mapa_equipo,):
     )
 
     return styled
+
 
 
 
